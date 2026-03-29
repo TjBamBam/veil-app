@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/tristiangoldman/Desktop/**)",
+      "Bash(npx create-next-app@latest claudeapp --typescript --tailwind --eslint --app --no-src-dir --import-alias \"@/*\" --yes)",
+      "Bash(cp -r /Users/tristiangoldman/Desktop/claudeapp/. /Users/tristiangoldman/Desktop/ClaudeApp/)",
+      "Bash(rm -rf /Users/tristiangoldman/Desktop/claudeapp)",
+      "Bash(npm install:*)",
+      "Bash(npx shadcn@latest init --base-color slate --defaults -y)",
+      "Bash(npx shadcn@latest add avatar badge dialog dropdown-menu input label scroll-area separator sheet tabs textarea toast switch)",
+      "Bash(npx shadcn@latest add avatar badge dialog dropdown-menu input label scroll-area separator sheet tabs textarea sonner switch)",
+      "Bash(npm run:*)"
+    ]
+  }
+}
