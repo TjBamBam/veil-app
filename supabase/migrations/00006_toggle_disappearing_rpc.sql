@@ -1,0 +1,1 @@
+CREATE OR REPLACE FUNCTION toggle_disappearing(conv_id TEXT, enabled BOOLEAN) RETURNS VAPS AS

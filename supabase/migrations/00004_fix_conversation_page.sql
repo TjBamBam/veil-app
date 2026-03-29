@@ -1,0 +1,1 @@
+CREATE INDEX on public.messages() where conversation_id *;
