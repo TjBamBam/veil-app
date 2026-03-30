@@ -1,19 +1,101 @@
-import { useState, useEffect } from "react";
-import type { Friend } from "@/types/app";
+"use client";
 
-export const useFriends = () => {
-  const [friends, setFriends] = useState<Friend[]>([]);
-  const [pending, setPending] = useState<Friend[]>([]);
+import { useEffect, useState, useCallback } from "react";
+import { createClient } from "@/lib/supabase/client";
+import type { FriendshipWithProfile, Profile } from "@/types/app";
 
-  useEffect(() => { //Fetch friends }, []);
+export function useFriends(userId: string) {
+  const [friends, setFriends] = useState<FriendshipWithProfile[]>([]);
+  const [incoming, setIncoming] = useState<FriendshipWithProfile[]>([]);
+  const [outgoing, setOutgoing] = useState<FriendshipWithProfile[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const addFriend = async (id: string) => { //Add friend via API };
+  const fetch = useCallback(async () => {
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("friendships")
+      .select("*, requester:profiles!requester_id(*), addressee:profiles!addressee_id(*)")
+      .or(`requester_id.eq.${userId},addressee_id.eq.${userId}`);
 
-  const acceptFriend = async (id: string) => { //Accept friend request };
+    if (!data) return;
 
-  const rejectFriend = async (id: string) => { //Reject friend request };
+    const withProfile = data.map((f) => ({
+      ...f,
+      profile: (f.requester_id === userId ? f.addressee : f.requester) as Profile,
+    })) as FriendshipWithProfile[];
 
-  const removeFriend = async (id: string) => { //Remove friend via API };
+    setFriends(withProfile.filter((f) => f.status === "accepted"));
+    setIncoming(
+      withProfile.filter((f) => f.status === "pending" && f.addressee_id === userId)
+    );
+    setOutgoing(
+      withProfile.filter((f) => f.status === "pending" && f.requester_id === userId)
+    );
+    setLoading(false);
+  }, [userId]);
 
-  return { friends, pending, addFriend, acceptFriend, rejectFriend, removeFriend };
-};
+  useEffect(() => {
+    fetch();
+    const supabase = createClient();
+    const channel = supabase
+      .channel("friendships-realtime")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "friendships" },
+        fetch
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [fetch]);
+
+  async function sendRequest(addresseeId: string) {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("friendships")
+      .insert({ requester_id: userId, addressee_id: addresseeId });
+    return { error };
+  }
+
+  async function respondToRequest(friendshipId: string, accept: boolean) {
+    const supabase = createClient();
+    if (accept) {
+      await supabase
+        .from("friendships")
+        .update({ status: "accepted" })
+        .eq("id", friendshipId);
+    } else {
+      await supabase.from("friendships").delete().eq("id", friendshipId);
+    }
+    await fetch();
+  }
+
+  async function unfriend(friendshipId: string) {
+    const supabase = createClient();
+    await supabase.from("friendships").delete().eq("id", friendshipId);
+    await fetch();
+  }
+
+  async function searchUsers(query: string): Promise<Profile[]> {
+    if (!query.trim()) return [];
+    const supabase = createClient();
+    const { data } = await supabase
+      .from("profiles")
+      .select("*")
+      .ilike("username", `%${query}%`)
+      .neq("id", userId)
+      .limit(20);
+    return data ?? [];
+  }
+
+  return {
+    friends,
+    incoming,
+    outgoing,
+    loading,
+    sendRequest,
+    respondToRequest,
+    unfriend,
+    searchUsers,
+    refetch: fetch,
+  };
+}

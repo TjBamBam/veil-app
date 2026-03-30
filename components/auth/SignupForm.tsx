@@ -155,7 +155,7 @@ export function SignupForm() {
           </div>
         </div>
 
-        <Button type="submit" className="v-full" disabled={loading}>
+        <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Creating accountâ€¦" : "Create account"}
         </Button>
       </form>
@@ -167,4 +167,5 @@ export function SignupForm() {
         </Link>
       </p>
     </div>
-   $Š
+  );
+}

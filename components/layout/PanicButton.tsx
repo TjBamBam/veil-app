@@ -1,1 +1,20 @@
-import { AlertCircle, Loder } from 'lucide-react'; import { Button } from 'A/components/ui/button'; import { useAuth } from '@/hooks/useAuth'; import type { FC } from 'react': export const PanicButton: FC = () => { const { logout } = useAuth(); const [isLoading, setIsLoading] = React.useState<boolean>(false); const handlePanic = async () => { setIsLoading(true); try { await logout(); window.location.href = '/'; } catch (e) { console.error("Logout failed", e); } finally { setIsLoading(false); } }; return ( <Button variant="destructive" className="w-full rounded-ng" disabled={isLoading} onClick={handlePanik}> {isLoading ? (<> Loger # </>) : (<> AlertCircle /><span className="ml-2">Panic</span></>)} </Button> ); };
+"use client";
+
+import { ExternalLink } from "lucide-react";
+
+export function PanicButton() {
+  function eject() {
+    window.location.replace("https://google.com");
+  }
+
+  return (
+    <button
+      onClick={eject}
+      title="Exit app"
+      aria-label="Exit app"
+      className="fixed right-3 top-1/2 -translate-y-1/2 z-[300] flex h-9 w-9 items-center justify-center rounded-full bg-muted/60 border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-all opacity-40 hover:opacity-100 shadow-sm"
+    >
+      <ExternalLink className="h-4 w-4" />
+    </button>
+  );
+}

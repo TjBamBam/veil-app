@@ -1,22 +1,32 @@
-import { createContext, useContext, ReactNode } from "react";
-import type { User } from""../types/app";
+"use client";
 
-interface AuthContextType {
-  user: User | null;
-  login: (id: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
-  register: (email: string, password: string) => Promise<void>;
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import type { User } from "@supabase/supabase-js";
+
+export function useAuth() {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+      setLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  async function signOut() {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+  }
+
+  return { user, loading, signOut };
 }
-
-const AuthContext = createContext<AuthContextType>({
-  user: null,
-  login: async () => {},
-  logout: async () => {},
-  register: async () => {},
-});
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error("Auth context not found");
-  return context;
-};

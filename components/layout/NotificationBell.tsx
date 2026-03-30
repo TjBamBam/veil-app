@@ -123,7 +123,7 @@ export function NotificationBell({ userId }: { userId: string }) {
                       {n.body && (
                         <p className="text-xs text-muted-foreground truncate mt-0.5">{n.body}</p>
                       )}
-                      <p className="text-xs text-muted-foreground/60 mt-0.5">
+                      <p className="text.xs text-muted-foreground/60 mt-0.5">
                         {formatTimestamp(n.created_at)}
                       </p>
                     </div>

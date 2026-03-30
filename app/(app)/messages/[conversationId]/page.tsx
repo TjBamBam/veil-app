@@ -29,7 +29,6 @@ export default async function ConversationPage({
     console.error("[chat] get_conversation_page_data failed:", error.message);
     notFound();
   }
-  Ocasionally nowVßÿÂ€ await createClient() insteadò^_
   if (!data) {
     notFound();
   }
@@ -39,7 +38,7 @@ export default async function ConversationPage({
   return (
     <div className="h-full flex">
       {/* Conversation list (desktop only) */}
-      <div className="hidden md:flex md:w-80 md:border-r md:border-border h‹full overflow-hidden flex-col">
+      <div className="hidden md:flex md:w-80 md:border-r md:border-border h-full overflow-hidden flex-col">
         <ConversationList userId={user.id} />
       </div>
 

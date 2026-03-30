@@ -1,7 +1,6 @@
-export const sanitize = (text: string) => {
-  return text
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/\/g, '&#x2s;');
-};
+import DOMPurify from "dompurify";
+
+export function sanitize(dirty: string): string {
+  if (typeof window === "undefined") return dirty;
+  return DOMPurify.sanitize(dirty, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });
+}

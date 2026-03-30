@@ -1,1 +1,138 @@
-import React from 'react'; import { Send, Paperclip } from 'lucide-react'; import { Button } from 'A/components/ui/button'; import { Textarea } from 'A/components/ui/textarea'; import type { FC } from 'react'; interface MessageInputProps { onSend: (message: string, file?: File) => Promise<void>; disabled?: boolean; } export const MessageInput: FC = ({ onSend, disabled }: MessageInputProps) => { const [content, setContent] = React.useState<string>(''); const [isSending, setIsSending] = React.useState<boolean>(false); const [selectedFile, setSelectedFile] = React.useState<File | undefined>(undefined); const handleSend = async () => { if (!content.trim() && !selectedFile) return; setIsSending(true); try { await onSend(content, selectedFile); setContent(''); setSelectedFile(undefined); } catch (e) { console.error('Failed to send', e); } finally { setIsSending(false); } }; const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => { const file = e.target.files?.[0]; if (file) setSelectedFile(file); }; return (<div className="space-y-2"> <div className="flex gap-2"> <Textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder="Type a message..." disabled={isSending || disabled} className="flex-1 min-h-10 resize-none" /> <Button onClick={handleSend} disabled={isSending || disabled || (!content.trim() && !selectedFile)}> <Send className="w-4 h-4" /> </Button> </div> {selectedFile && <p className="text-xs text-slate-400">File: {selectedFile.name} ({Math.round(selectedFile.size / 1024)} KB)</p> } <label className="flex items-center gap-2 cursor-pointer px-3 py-2 border border-slate-300 rounded hover:b�-slate-50 text-sm"> <Paperclip className="w-4 h-4" /> <span>Pattach File</span> <input type="file" hidden onChange={handleFileSelect} /> </label> </div>);};
+"use client";
+
+import { useState, useRef, KeyboardEvent } from "react";
+import { Send, Paperclip, X, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+
+interface Props {
+  onSend: (content: string) => Promise<void>;
+  onSendMedia?: (file: File) => Promise<void>;
+  uploading?: boolean;
+  disabled?: boolean;
+}
+
+export function MessageInput({ onSend, onSendMedia, uploading, disabled }: Props) {
+  const [text, setText] = useState("");
+  const [previewFile, setPreviewFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const isImage = file.type.startsWith("image/");
+    const isVideo = file.type.startsWith("video/");
+    if (!isImage && !isVideo) return;
+
+    setPreviewFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
+  }
+
+  function clearFile() {
+    setPreviewFile(null);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  async function handleSend() {
+    if (sending || disabled) return;
+    setSending(true);
+
+    if (previewFile && onSendMedia) {
+      await onSendMedia(previewFile);
+      clearFile();
+    } else if (text.trim()) {
+      await onSend(text.trim());
+      setText("");
+    }
+
+    setSending(false);
+  }
+
+  function handleKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  }
+
+  return (
+    <div className="border-t border-border bg-background px-4 py-3">
+      {/* File preview */}
+      {previewUrl && (
+        <div className="mb-2 relative inline-block">
+          {previewFile?.type.startsWith("video/") ? (
+            <video
+              src={previewUrl}
+              className="max-h-32 rounded-lg"
+              controls={false}
+              muted
+            />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={previewUrl}
+              alt="preview"
+              className="max-h-32 rounded-lg object-cover"
+            />
+          )}
+          <button
+            onClick={clearFile}
+            className="absolute -top-2 -right-2 rounded-full bg-destructive text-white p-0.5"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      )}
+
+      <div className="flex items-end gap-2">
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*,video/*"
+          onChange={handleFileSelect}
+          className="hidden"
+        />
+        <button
+          type="button"
+          onClick={() => fileRef.current?.click()}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+          title="Attach file"
+        >
+          <Paperclip className="h-5 w-5" />
+        </button>
+
+        <Textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={previewFile ? "Add a caption… (optional)" : "Message…"}
+          className={cn(
+            "min-h-0 max-h-32 resize-none rounded-2xl border-border bg-secondary py-2.5 text-sm",
+            "focus-visible:ring-primary"
+          )}
+          rows={1}
+          disabled={disabled}
+        />
+
+        <Button
+          size="icon"
+          onClick={handleSend}
+          disabled={(!text.trim() && !previewFile) || sending || uploading || disabled}
+          className="h-9 w-9 shrink-0 rounded-full"
+        >
+          {sending || uploading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Send className="h-4 w-4" />
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+}

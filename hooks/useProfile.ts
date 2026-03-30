@@ -1,18 +1,42 @@
-import { useState, useEffect } from "react";
+"use client";
+
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 import type { Profile } from "@/types/app";
 
-export const useProfile = () => {
+export function useProfile(userId?: string) {
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    //Fetch profile
-    setLoading(false);
-  }, []);
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+    const supabase = createClient();
+    supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .single()
+      .then(({ data }) => {
+        setProfile(data);
+        setLoading(false);
+      });
+  }, [userId]);
 
-  const updateProfile = async (changes: Partial<Profile>) => {
-    //Update profile via API
-  };
+  async function updateProfile(updates: Partial<Profile>) {
+    if (!userId) return;
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("profiles")
+      .update(updates)
+      .eq("id", userId)
+      .select()
+      .single();
+    if (!error && data) setProfile(data);
+    return { error };
+  }
 
-  return { profile, updateProfile, loading };
-};
+  return { profile, loading, updateProfile };
+}

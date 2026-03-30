@@ -13,5 +13,5 @@ export default async function SavedPage() {
     <div className="h-full overflow-y-auto pb-16 md:pb-0">
       <SavedMessages userId={user.id} />
     </div>
-  )
+  );
 }
